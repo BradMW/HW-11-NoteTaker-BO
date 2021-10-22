@@ -1,32 +1,53 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-// const { clog } = require('./middleware/clog');
-// const api = require('./routes/index.js');
+const db = require('./db/db.json');
+const { v4: uuidv4 } = require('uuid');
+const { readFromFile } = require('./helpers/fsUtils');
 
-const PORT = 3001;
+
+const PORT =  process.env.PORT || 3000;
 
 const app = express();
 
-// Import custom middleware, "cLog"
-// app.use(clog);
-
-// Middleware for parsing JSON and urlencoded form data
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use('/api', api);
 
-app.use(express.static('__dirname'));
 
-// GET Route for homepage
+app.use(express.static('public'));
+
+
 app.get('/', (req, res) =>
   res.sendFile(path.join(__dirname, '/public/index.html'))
 );
 
-// GET Route for feedback page
-app.get('/routes', (req, res) =>
-  res.sendFile(path.join(__dirname, '/public/assets/notes.html'))
+
+app.get('/public', (req, res) => res.sendFile(path.join(__dirname, '/public/notes.html'))
 );
+
+app.get('./api/notes', (req, res) => {
+  readFromFile('./db/db.json').then((data) => res.json(JSON.parse(data)))
+});
+
+app.post('./api/notes', (req, res) => {
+  console.log(req.body);
+
+  const { title, text } = req.body;
+
+  if (req.body) {
+    const newNote = {
+      title,
+      text,
+      note_id: uuidv4(),
+    };
+
+    readAndAppend(newNote, './db/notes.json');
+    res.json(`Note added successfully 🚀`);
+  } else {
+    res.error('Error in adding Note');
+  }
+});
+
 
 app.listen(PORT, () =>
   console.log(`App listening at http://localhost:${PORT} 🚀`)
